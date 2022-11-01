@@ -4,6 +4,7 @@ Shader "Custom/BunnyEarsShader"
     {
         _MainTex ("Texture", 2D) = "white" {}
         _Scale ("Scale", Range(0.0, 1.0)) = 0.0
+        _TexBlend("Texture Blend", Range(0.0, 1.0)) = 0.0
     }
 
     SubShader
@@ -32,7 +33,10 @@ Shader "Custom/BunnyEarsShader"
                 float2 uv : TEXCOORD0;
             };
 
+            // Properties
+            sampler2D _MainTex;
             float _Scale;
+            float _TexBlend;
 
             v2f vert (appdata v)
             {
@@ -40,26 +44,25 @@ Shader "Custom/BunnyEarsShader"
 
                 // Normalize [0, 1] to [-1, 1]
                 /* float3 stretch_basis = v.color.rgb * 2.0 - 1.0; */
-                float3 stretch_basis = float3(0, 0, -1);
-                /* float3 stretch_basis = float3(0, 0, 0); */
-                /* v.vertex.xyz += stretch_basis * _Scale; */
-                v.vertex.z *= _Scale;
+                /* float3 basis = float3(0.25, 1, 0); */
+                float3 basis = v.color.rgb;
+                float3 pos = v.vertex;
+                /* p = p - bp + bps => p = p * (1 + b(-1 + s)) */
+                pos = pos * (1 + basis * (_Scale - 1));
 
                 // Set varyings
+                o.vertex = UnityObjectToClipPos(pos);
                 o.color = v.color;
-                o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = v.uv;
                 return o;
             }
 
-            // Properties
-            sampler2D _MainTex;
 
             fixed4 frag(v2f i) : SV_Target 
             {
-                /* return tex2D(_MainTex, i.uv); */
-                return i.color;
-                /* return fixed4(1, 1, 0, 1); */
+                float4 tex = tex2D(_MainTex, i.uv);
+                float4 col = i.color;
+                return lerp(col, tex, _TexBlend);
             }
             ENDCG
         }

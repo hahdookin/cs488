@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: BunnyEarsMaterial
+  m_Name: BunnyEars
   m_Shader: {fileID: 4800000, guid: 6270a7b1b124ede4eb7d93b29a4f31d4, type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 4
@@ -40,7 +40,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
-        m_Texture: {fileID: 2800000, guid: 50dfd3b0e86810d418840866d832e236, type: 3}
+        m_Texture: {fileID: 2800000, guid: ff2db7512e9b6b34c97e9f20cef60466, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MetallicGlossMap:
@@ -71,10 +71,11 @@ Material:
     - _NoseScale: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
-    - _Scale: 1
+    - _Scale: 0.66
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
+    - _TexBlend: 1
     - _UVSec: 0
     - _ZWrite: 1
     m_Colors:
