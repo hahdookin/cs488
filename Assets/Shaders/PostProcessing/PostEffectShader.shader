@@ -132,6 +132,7 @@ Shader "Custom/PostEffectShader"
                     output.b = floor((float(_Blues) - 1.0f) * output.b + 0.5) / (float(_Blues) - 1.0f);
                 }
 
+                /* return tex2D(_Sampler, float2(3 * 0.5/3, 0)); */
                 return fixed4(output, 1.0);
             }
             ENDCG
@@ -190,6 +191,7 @@ Shader "Custom/PostEffectShader"
                 float4 edge = tex2D(_EdgeTexture, i.uv);
                 edge.rgb = 1.0 - edge.rbg;
                 float4 dither = tex2D(_DitherTexture, i.uv);
+                return dither;
                 float4 final = dither * edge;
                 /* if (final == 0) final = _EdgeColor; */
                 return final;

@@ -11,6 +11,7 @@
 % Useful packages
 \usepackage{amsmath}
 \usepackage{graphicx}
+\usepackage{subcaption}
 \usepackage[colorlinks=true, allcolors=blue]{hyperref}
 
 \title{Graphics Shaders for Scaling Photo-Realism in Real-Time Rendering}
@@ -48,8 +49,28 @@ Where $N$ is a vector containing the number of possible colors for each color ch
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.3\textwidth]{ChrisBlackWhite.PNG}
+% \includegraphics[width=0.3\textwidth]{ChrisBlackWhite.PNG}
+\includegraphics[height=5cm]{ChrisBlackWhite.PNG}
 \caption{\label{fig:BlackWhite}Color palette reduction applied on a greyscale image with N = 2.}
+\end{figure}
+
+\begin{figure}[h]
+
+    \begin{subfigure}{0.5\textwidth}
+        \centering
+        \includegraphics[width=0.5\linewidth, height=2cm]{CustomSampler.PNG} 
+        \caption{Custom sampler of size $N x 1$}
+        \label{fig:CustomSampler}
+    \end{subfigure}
+    \begin{subfigure}{0.5\textwidth}
+        \centering
+        \includegraphics[height=5cm]{ChrisCustomSampler.PNG}
+        \caption{\ref{fig:BlackWhite} with pixel values as UV coordinates to sample \ref{fig:CustomSampler}}
+        \label{fig:subim2}
+    \end{subfigure}
+
+    \caption{Using a greyscale image to map to a new color pallete}
+    \label{fig:CustomSamplerDemo}
 \end{figure}
 
 \subsection{Screen-space outline detection}
@@ -77,6 +98,36 @@ Using this technique, the 3D models used needs to be prepared with:
 \item Growth axis color information painted on
 \item A sensible location of the object origin
 \end{itemize}
+
+\begin{figure}[h]
+
+    \begin{subfigure}{0.5\textwidth}
+        \centering
+        \includegraphics[height=5cm]{BunnyEarsTextured.PNG} 
+        \caption{A textured mesh representing bunny ears, a nose, and whiskers}
+        \label{fig:BunnyEarsTextured}
+    \end{subfigure}
+    \begin{subfigure}{0.5\textwidth}
+        \centering
+        \includegraphics[height=5cm]{BunnyEarsVertexColors.PNG}
+        \caption{The same mesh colored with the per-vertex colors corresponding to its desired growth axis}
+        \label{fig:BunnyEarsVertexColors}
+    \end{subfigure}
+
+    \caption{A example textured mesh and its underlying per-vertex colors representing vector information.}
+    \label{fig:BunnyEarsMesh}
+\end{figure}
+
+From the vertex colors shown in \ref{fig:BunnyEarsVertexColors}, each per-vertex color $\begin{pmatrix}R & G & B\end{pmatrix}$ with values in the range $[0, 1]$ directly correspond to the vector $\begin{pmatrix}X & Y & Z\end{pmatrix}$ which represents the weights of how much to scale each axis. In the case for Unity, red corresponds to $X$, green corresponds to $Y$, and blue corresponds to $Z$.
+The advantage to storing growth axis information in the per-vertex color attribute instead of in the game engine is performance. By having the information available in the mesh, the GPU never has to interact with the CPU about which axis for a vertex to scale along. Additionally, another advantage is the ease of encoding this information in a 3D modeling software. The process is very similar to weight painting, which makes the process intuitive to an experienced modeler.
+
+\begin{figure}[h]
+\centering
+\includegraphics[height=5cm]{BunnyEarsScaled65.PNG}
+\caption{\label{fig:BunnyEarsScaled65}The \ref{fig:BunnyEarsMesh} mesh with $S = 0.65$ and the original size outlines present.}
+\end{figure}
+
+In figure \ref{fig:BunnyEarsScaled65}, it can be seen that parts of the mesh colored red only scale along the $X$ axis, while the parts colored light-green scale along the $Y$ axis entirely and slightly along the $X$ axis. The outlines of the original unscaled mesh remain to help visualize the scaling. Additionally, it can be seen that the nose mesh scales uniformly along each axis. This is caused by the per-vertex color evaluating to $\begin{pmatrix}1 & 1 & 1\end{pmatrix}$, or white.
 
 \subsection{Mesh outline}
 
