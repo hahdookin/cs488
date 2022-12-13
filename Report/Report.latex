@@ -17,41 +17,40 @@
 \usepackage{pgfplots}
 \usepackage[usenames,dvipsnames]{color}
 \usepackage{alltt}
-% \usepackage{fancyvrb}
+\usepackage{fancyvrb}
+\usepackage{tcolorbox}
 \usepackage{xcolor}
-% \definecolor{number}{HTML}{F2CE00}
-% \definecolor{type}{HTML}{CE6F8F}
 \definecolor{type}{HTML}{D70087}
 \definecolor{number}{HTML}{D75F00}
 
-\title{Graphics Shaders for Scaling Photo-Realism in Real-Time Rendering}
+\title{Graphics Shaders for Scaling Photorealism in Real-Time Rendering}
 \author{Christopher Pane}
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
-Computer graphics shaders were developed in order to test the ability to scale photo-realism. Graphics shaders were developed in Unity using screen-space edge detection and color palette reduction. Vertex shaders were developed for 3D models used in tracking software.
+Computer graphics shaders were developed in order to test the ability to scale photorealism. Graphics shaders were developed in Unity using screen-space edge detection and color palette reduction. Vertex shaders were developed for 3D models used in tracking software. Shaders were designed to be scaled from non-photo realistic to photo realistic through a tuning parameter. The tuning parameter was controlled through the use of easing functions. Continuation of the project will include setting up face tracking and using a depth camera.
 \end{abstract}
 
 \section{Introduction}
 
-The research done is focused on creating Unity shaders to change the style of 3D content in real time to render virtual humans in different styles ranging from realistic to non-photo realistic.
+The research done is focused on creating Unity shaders to change the style of 3D content in real time to render virtual humans in different styles ranging from realistic to non-photorealistic.
 
-In order to emulate a non-photo realistic appearance, the following distinct qualities of non-photo realistic renderings were deduced:
+In order to emulate a non-photorealistic appearance, the following distinct qualities of non-photo realistic renderings were deduced:
 \begin{enumerate}
 \item Reduced color palette 
 \item Thick outlines
 \item Non-human features
 \end{enumerate}
-After examining these key qualities of non-photo realistic renderings, fragment and vertex shaders were developed to utilize screen-space textures and 3D models to scale photo-realism. Fragment shaders were used to apply post-processing effects to a screen-space texture. Vertex shaders were used to modify a mesh. Both shader implementations were combined to increase the effectiveness of the non-photo realistic illusion. Finally, the composited effects will be scaled based on a tuning parameter that ranges from 0 to 1.
+After examining these key qualities of non-photorealistic renderings, fragment and vertex shaders were developed to utilize screen-space textures and 3D models to scale photo-realism. Fragment shaders were used to apply post-processing effects to a screen-space texture. Vertex shaders were used to modify a mesh. Both shader implementations were combined to increase the effectiveness of the non-photo realistic illusion. Finally, the composited effects will be scaled based on a tuning parameter that ranges from 0 to 1.
 
 
 \section{Fragment Shader}
 
 \subsection{Color palette reduction}
 
-To address the non-photo realistic quality of a reduced color palette, a coloring technique from Ordered dithering was used. Ordered dithering applies the following formula to each pixel to determine its nearest color in a limited color palette:
+To address the non-photorealistic quality of a reduced color palette, a coloring technique from Ordered dithering was used. Ordered dithering applies the following formula to each pixel to determine its nearest color in a limited color palette:
 \[
     C_{nearest} = \frac{\lfloor N - 1 \rfloor * C + 0.5}{\lfloor N - 1 \rfloor}
 \]
@@ -59,13 +58,19 @@ Where $N$ is a vector containing the number of possible colors for each color ch
 
 This color palette reduction can be used on the texture generated from a 3D scan mesh generation. When a 3D scan is used to generate a mesh, the texture generated in the can have its noise reduced and color palette reduced, effectively creating a stylized 3D model of the target. When this technique is used, edges can be applied to the mesh with an outline mesh, rather than using post-processing.
 
-\begin{figure}[h]
+%============================================
+% Reduced palette n = 2
+%============================================
+\begin{figure}[h!]
 \centering
 % \includegraphics[width=0.3\textwidth]{ChrisBlackWhite.PNG}
 \includegraphics[height=5cm]{ChrisBlackWhite.PNG}
 \caption{\label{fig:BlackWhite}Color palette reduction applied on a greyscale image with N = 2.}
 \end{figure}
 
+%============================================
+% Display of sampler
+%============================================
 \begin{figure}[h]
 
     \begin{subfigure}{0.5\textwidth}
@@ -95,8 +100,12 @@ To maintain the performance of the real-time render, only 2 passes of the 5 pass
 \item Convolve the texture with the Sobel operator to calculate the gradients.
 \end{enumerate}
 
+After calculating the edges of the base image, the edge detection texture can be composited with the base texture to apply edges to the image. The magnitude determined by the Sobel operator can be used to $step$ the value based on a threshold, which creates sharp edges.
+
+%============================================
 % Comparison of edge detection methods
-\begin{figure}[h]
+%============================================
+\begin{figure}[!htb]
 
     \begin{subfigure}{0.5\textwidth}
         \centering
@@ -119,7 +128,7 @@ To maintain the performance of the real-time render, only 2 passes of the 5 pass
 
 \subsection{Axis-bound growth}
 
-Vertex shaders were used to aid in creating non-photo realistic imagery. It was decided that a technique to adjust the realism of a 3D model was to scale the vertices away from the object origin. However, simply scaling the vertices by a scalar would not aid in the illusion of controlled realism.
+Vertex shaders were used to aid in creating non-photorealistic imagery. It was decided that a technique to adjust the realism of a 3D model was to scale the vertices away from the object origin. However, simply scaling the vertices by a scalar would not aid in the illusion of controlled realism.
 
 The vertex shader was designed to scale each vertex based on a per-vertex encoded vector describing the axis on which the vertex scaling should occur. This information was encoded into the per-vertex color attribute and decoded in the shader to determine how a vertex should be scaled.
 
@@ -137,6 +146,9 @@ Using this technique, the 3D models used needs to be prepared with:
 \item A sensible location of the object origin
 \end{itemize}
 
+%============================================
+% Bunny Ears grahpic
+%============================================
 \begin{figure}[h]
 
     \begin{subfigure}{0.5\textwidth}
@@ -173,34 +185,50 @@ To apply an outline to a 3D model in world-space, a copy of the mesh with its no
 
 \section{Tuning Parameter}
 \subsection{Connecting the Tuning Parameter}
+Although each shader would be controlled by a single tuning parameter, each shader would use the parameter differently.
+
 \subsubsection{Color Palette Reduction}
 The tuning parameter mixes the reduced color palette texture with the base image texture. Effectively, this performs a linear interpolation between the base texture and the reduced texture based on the tuning parameter.
+\begin{tcolorbox}
 \begin{alltt}
 out_color = \textcolor{type}{mix}(base, reduced, tuning_parameter)
 \end{alltt}
+\end{tcolorbox}
 
 \subsubsection{Screen-space outline detection}
 The tuning parameter scales the cut-off value threshold for whether a pixel identified by the canny-edge detection algorithm is a strong edge. 
+\begin{tcolorbox}
 \begin{alltt}
 out_color = \textcolor{type}{step}(tuning_parameter * threshold, \textcolor{type}{vec3}(edge_value))
 \end{alltt}
+\end{tcolorbox}
 
 \subsubsection{Axis-bound growth}
 The tuning parameter serves as the cut-off value for whether a pixel identified by the canny-edge detection algorithm is a strong edge. 
+\begin{tcolorbox}
 \begin{alltt}
 \textcolor{type}{vec3} pos = vertex.position
 \textcolor{type}{vec3} basis = vertex.color
 out_position = pos * (\textcolor{number}{1} + basis * (tuning_parameter - \textcolor{number}{1}))
 \end{alltt}
+\end{tcolorbox}
 
 \subsubsection{Mesh outline}
 The tuning parameter simply serves as a scaling factor of the vertex's position.
+\begin{tcolorbox}
 \begin{alltt}
 out_position = vertex.position * max_scale * tuning_parameter
 \end{alltt}
+\end{tcolorbox}
 
 \subsection{Controlling the Tuning Parameter}
 It could be seen that some visual effects should not scale linearly with the tuning parameter. For example, it may be preferred that the outline effect remain until very low values of the tuning parameter. In order to allow for more flexibility of controlling the tuning parameter, easing functions were added to the shaders.
+
+In \ref{fig:tuningexample}, the intensity of the effects can be seen at varying levels of the tuning parameter. The color palette reduction effect scales linearly with the tuning parameter and the screen-space edge detection effect scales based on $\sqrt{x}$. Because the edge detection scales with $\sqrt{x}$, the edge effect remains more prominent at lower tuning parameter values.
+
+%============================================
+% Graph of sqrt X
+%============================================
 \begin{figure}[h]
 \centering
 \begin{tikzpicture}
@@ -214,13 +242,15 @@ It could be seen that some visual effects should not scale linearly with the tun
         \addplot [mark=none, domain={0:1}, restrict y to domain={0:1}] {x^(1/2)};
     \end{axis}
 \end{tikzpicture}
-\caption{The tuning parameter after the easing function $x^2$ was applied.}
+\caption{The tuning parameter after the easing function $\sqrt{x}$ was applied.}
 \end{figure}
 
+%============================================
 % Triple display of tuning values
-\begin{figure}[!htb]
+%============================================
+\begin{figure}
 \minipage{0.32\textwidth}
-    \includegraphics[width=\linewidth]{TuningFull.png}
+    \includegraphics[width=\linewidth]{TuningFull.png} 
     \caption{1.0}
     \label{fig:tuningfull}
 \endminipage\hfill
@@ -229,16 +259,21 @@ It could be seen that some visual effects should not scale linearly with the tun
     \caption{0.5}
     \label{fig:tuninghalf}
 \endminipage\hfill
-\minipage{0.32\textwidth}%
+\minipage{0.32\textwidth}
     \includegraphics[width=\linewidth]{TuningQuarter.png}
     \caption{0.25}
     \label{fig:tuningquarter}
 \endminipage
-\caption{Original image with different tuning parameter values.}
+\caption{\label{fig:tuningexample}Original image with different tuning parameter values.}
 \end{figure}
 
 \section{Further Continuation}
-Further continuation of this software research project would consist of connecting the Unity shaders to a head-mounted display.
+Further continuation of this software research project would consist of integrating a real-time tracking software into the Unity project to allow 3D models to be tracked to the position and rotation of a person's features. This would be required to enable the use of the vertex shader based effects, such as mesh outlines and axis-bound growth. 
+
+Additionally, the use of a depth camera would allow more features to be applied, such as distance based rendering. This could be used to seperate the focus target with the background and aid in the non-photorealistic render.
+
+\section*{Acknowledgement}
+Dr. Salam Daher
 
 \begin{thebibliography}{9}
 \bibitem{thebookofshaders}
