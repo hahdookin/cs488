@@ -15,6 +15,7 @@ public class PostEffectScript : MonoBehaviour
         samplerTex = new Texture2D(4, 1);
         samplerTex.filterMode = FilterMode.Point;
         UpdateTexture();
+        /* Debug.Log(TuningParameter.Instance.value); */
     }
 
     void UpdateTexture() {
@@ -30,6 +31,15 @@ public class PostEffectScript : MonoBehaviour
         EdgeDetection,
         Composite
     }
+
+    public enum EasingFunction {
+        Linear,
+        Sqrt,
+        Quadratic,
+        Cubic
+    }
+    public EasingFunction ditherEasingFunction = EasingFunction.Linear;
+    public EasingFunction edgeEasingFunction = EasingFunction.Linear;
 
     // Uniforms for the dithering pass
     [Range(0.0f, 1.0f)]
@@ -61,6 +71,13 @@ public class PostEffectScript : MonoBehaviour
 
     void OnRenderImage( RenderTexture src, RenderTexture dest ) {
         // Set uniforms in the editor
+        // Tuning Parameter
+        mat.SetFloat("_TuningParameter", TuningParameter.Instance.value);
+        
+        // Easing functions
+        mat.SetInt("_DitherEasingFunction", (int)ditherEasingFunction);
+        mat.SetInt("_EdgeEasingFunction", (int)edgeEasingFunction);
+
         // Dither uniforms
         mat.SetFloat("_Spread", spread);
         mat.SetFloat("_Reds", reds);

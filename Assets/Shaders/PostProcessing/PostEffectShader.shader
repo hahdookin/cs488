@@ -14,6 +14,31 @@ Shader "Custom/PostEffectShader"
     
     CGINCLUDE
         #include "UnityCG.cginc"
+
+        float easing(float x, int type)
+        {
+            float val;
+            switch (type) {
+                case 0:
+                    val = x;
+                    break;
+                case 1:
+                    val = sqrt(x);
+                    break;
+                case 2:
+                    val = x * x;
+                    break;
+                case 3:
+                    /* val = x * x * x; */
+                    val = step(0.9, x);
+                    break;
+                default:
+                    val = x;
+                    break;
+            }
+            return val;
+        }
+
         // Main tex for blur
         sampler2D _MainTex;
         float4 _MainTex_TexelSize;
@@ -21,6 +46,13 @@ Shader "Custom/PostEffectShader"
         // Composite textures
         sampler2D _DitherTexture;
         sampler2D _EdgeTexture;
+
+        // Tuning Parameter
+        float _TuningParameter;
+
+        // Easing functions
+        int _DitherEasingFunction;
+        int _EdgeEasingFunction;
 
         // Edge uniforms
         float4 _EdgeColor;
@@ -133,7 +165,9 @@ Shader "Custom/PostEffectShader"
                 }
 
                 /* return tex2D(_Sampler, float2(3 * 0.5/3, 0)); */
-                return fixed4(output, 1.0);
+                /* return fixed4(output, 1.0) * tex * _TuningParameter; */
+                return lerp(tex, fixed4(output, 1.0), easing(_TuningParameter, _DitherEasingFunction));
+                /* return tex; */
             }
             ENDCG
         }
@@ -175,7 +209,11 @@ Shader "Custom/PostEffectShader"
                 
                 float mag = sqrt( Gx * Gx + Gy * Gy );
                 float theta = abs(atan2(Gy, Gx)) / 3.14159; // normalize theta to [0, 1]
-                return step(_Thresh, fixed4(mag, mag, mag, 1));
+                /* return step(_Thresh, fixed4(mag, mag, mag, 1)) * sqrt(_TuningParameter); */
+                return step(
+                    (1.0f / easing(_TuningParameter, _EdgeEasingFunction)) * _Thresh, 
+                    fixed4(mag, mag, mag, 1)
+                );
             }
             ENDCG
         }
@@ -189,12 +227,14 @@ Shader "Custom/PostEffectShader"
 
             fixed4 frag(v2f i) : SV_Target {
                 float4 edge = tex2D(_EdgeTexture, i.uv);
+                // Flip the colors
                 edge.rgb = 1.0 - edge.rbg;
                 float4 dither = tex2D(_DitherTexture, i.uv);
-                return dither;
+                /* return dither; */
                 float4 final = dither * edge;
                 /* if (final == 0) final = _EdgeColor; */
                 return final;
+                /* return edge; */
             }
             ENDCG
         }

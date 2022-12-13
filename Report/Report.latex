@@ -14,6 +14,16 @@
 \usepackage{subcaption}
 \usepackage[colorlinks=true, allcolors=blue]{hyperref}
 
+\usepackage{pgfplots}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{alltt}
+% \usepackage{fancyvrb}
+\usepackage{xcolor}
+% \definecolor{number}{HTML}{F2CE00}
+% \definecolor{type}{HTML}{CE6F8F}
+\definecolor{type}{HTML}{D70087}
+\definecolor{number}{HTML}{D75F00}
+
 \title{Graphics Shaders for Scaling Photo-Realism in Real-Time Rendering}
 \author{Christopher Pane}
 
@@ -21,7 +31,7 @@
 \maketitle
 
 \begin{abstract}
-Your abstract.
+Computer graphics shaders were developed in order to test the ability to scale photo-realism. Graphics shaders were developed in Unity using screen-space edge detection and color palette reduction. Vertex shaders were developed for 3D models used in tracking software.
 \end{abstract}
 
 \section{Introduction}
@@ -34,7 +44,7 @@ In order to emulate a non-photo realistic appearance, the following distinct qua
 \item Thick outlines
 \item Non-human features
 \end{enumerate}
-After examining these key qualities of non-photo realistic renderings, fragment and vertex shaders were developed to utilize screen-space textures and 3D models to scale photo-realism. Fragment shaders were used to apply post-processing effects to a screen-space texture. Vertex shaders were used to modify a mesh. Both shader implementations were combined to increase the effectiveness of the non-photo realistic illusion.
+After examining these key qualities of non-photo realistic renderings, fragment and vertex shaders were developed to utilize screen-space textures and 3D models to scale photo-realism. Fragment shaders were used to apply post-processing effects to a screen-space texture. Vertex shaders were used to modify a mesh. Both shader implementations were combined to increase the effectiveness of the non-photo realistic illusion. Finally, the composited effects will be scaled based on a tuning parameter that ranges from 0 to 1.
 
 
 \section{Fragment Shader}
@@ -46,6 +56,8 @@ To address the non-photo realistic quality of a reduced color palette, a colorin
     C_{nearest} = \frac{\lfloor N - 1 \rfloor * C + 0.5}{\lfloor N - 1 \rfloor}
 \]
 Where $N$ is a vector containing the number of possible colors for each color channel and $C$ is the currently sampled pixel value. By setting the original pixel color to its greyscale value, the color's of the new image now correspond to their scalar value in the range $[0, 1]$. By reinterpreting this information as texture UV coordinates along a $N x 1$ texture, custom palettes can be applied to the texture.
+
+This color palette reduction can be used on the texture generated from a 3D scan mesh generation. When a 3D scan is used to generate a mesh, the texture generated in the can have its noise reduced and color palette reduced, effectively creating a stylized 3D model of the target. When this technique is used, edges can be applied to the mesh with an outline mesh, rather than using post-processing.
 
 \begin{figure}[h]
 \centering
@@ -75,7 +87,33 @@ Where $N$ is a vector containing the number of possible colors for each color ch
 
 \subsection{Screen-space outline detection}
 
-To apply thick outlines to a screen-space texture, a screen-space edge detection used. After consider a variety of edge detection algorithms, it was decided that using a canny edge-detection algorithm would be effective in creating the thick borders.
+To apply thick outlines to a screen-space texture, a screen-space edge detection used. After consider a variety of edge detection algorithms, it was decided that using a canny edge-detection algorithm would be effective in creating the thick borders. 
+
+To maintain the performance of the real-time render, only 2 passes of the 5 pass canny edge-detection were used.
+\begin{enumerate}
+\item Apply a Gaussian filter to blur the texture and reduce noise.
+\item Convolve the texture with the Sobel operator to calculate the gradients.
+\end{enumerate}
+
+% Comparison of edge detection methods
+\begin{figure}[h]
+
+    \begin{subfigure}{0.5\textwidth}
+        \centering
+        \includegraphics[height=5cm]{EdgeNoBlur.png}
+        \caption{Edge detection on the base image.}
+        \label{fig:EdgeNoBlur}
+    \end{subfigure}
+    \begin{subfigure}{0.5\textwidth}
+        \centering
+        \includegraphics[height=5cm]{EdgeBlur.png} 
+        \caption{Edge detection on the Gaussian blurred image.}
+        \label{fig:EdgeBlur}
+    \end{subfigure}
+
+    \caption{Comparison of edge detection on a blurred and non-blurred image. Blurring the base image before edge detection considerably reduces noise, as well as enhances only the most prominent edges.}
+    \label{fig:EdgeComparison}
+\end{figure}
 
 \section{Vertex Shader}
 
@@ -114,7 +152,7 @@ Using this technique, the 3D models used needs to be prepared with:
         \label{fig:BunnyEarsVertexColors}
     \end{subfigure}
 
-    \caption{A example textured mesh and its underlying per-vertex colors representing vector information.}
+    \caption{An example textured mesh and its underlying per-vertex colors representing vector information.}
     \label{fig:BunnyEarsMesh}
 \end{figure}
 
@@ -133,85 +171,78 @@ In figure \ref{fig:BunnyEarsScaled65}, it can be seen that parts of the mesh col
 
 To apply an outline to a 3D model in world-space, a copy of the mesh with its normals flipped was created, scaled up slightly, and removed from the lighting pipeline.
 
-\subsection{How to include Figures}
+\section{Tuning Parameter}
+\subsection{Connecting the Tuning Parameter}
+\subsubsection{Color Palette Reduction}
+The tuning parameter mixes the reduced color palette texture with the base image texture. Effectively, this performs a linear interpolation between the base texture and the reduced texture based on the tuning parameter.
+\begin{alltt}
+out_color = \textcolor{type}{mix}(base, reduced, tuning_parameter)
+\end{alltt}
 
-% First you have to upload the image file from your computer using the upload link in the file-tree menu. Then use the includegraphics command to include it in your document. Use the figure environment and the caption command to add a number and a caption to your figure. See the code for Figure \ref{fig:frog} in this section for an example.
+\subsubsection{Screen-space outline detection}
+The tuning parameter scales the cut-off value threshold for whether a pixel identified by the canny-edge detection algorithm is a strong edge. 
+\begin{alltt}
+out_color = \textcolor{type}{step}(tuning_parameter * threshold, \textcolor{type}{vec3}(edge_value))
+\end{alltt}
 
-Note that your figure will automatically be placed in the most appropriate place for it, given the surrounding text and taking into account other figures or tables that may be close by. You can find out more about adding images to your documents in this help article on \href{https://www.overleaf.com/learn/how-to/Including_images_on_Overleaf}{including images on Overleaf}.
+\subsubsection{Axis-bound growth}
+The tuning parameter serves as the cut-off value for whether a pixel identified by the canny-edge detection algorithm is a strong edge. 
+\begin{alltt}
+\textcolor{type}{vec3} pos = vertex.position
+\textcolor{type}{vec3} basis = vertex.color
+out_position = pos * (\textcolor{number}{1} + basis * (tuning_parameter - \textcolor{number}{1}))
+\end{alltt}
 
-% \begin{figure}
-% \centering
-% \includegraphics[width=0.3\textwidth]{frog.jpg}
-% \caption{\label{fig:frog}This frog was uploaded via the file-tree menu.}
-% \end{figure}
+\subsubsection{Mesh outline}
+The tuning parameter simply serves as a scaling factor of the vertex's position.
+\begin{alltt}
+out_position = vertex.position * max_scale * tuning_parameter
+\end{alltt}
 
-\subsection{How to add Tables}
+\subsection{Controlling the Tuning Parameter}
+It could be seen that some visual effects should not scale linearly with the tuning parameter. For example, it may be preferred that the outline effect remain until very low values of the tuning parameter. In order to allow for more flexibility of controlling the tuning parameter, easing functions were added to the shaders.
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}
+    \begin{axis}[
+        samples=200,
+        xmin=0, xmax=1,
+        ymin=0, ymax=1,
+        xlabel={Tuning Parameter $x$},
+        ylabel={$\sqrt{x}$}
+    ]
+        \addplot [mark=none, domain={0:1}, restrict y to domain={0:1}] {x^(1/2)};
+    \end{axis}
+\end{tikzpicture}
+\caption{The tuning parameter after the easing function $x^2$ was applied.}
+\end{figure}
 
-% Use the table and tabular environments for basic tables --- see Table~\ref{tab:widgets}, for example. For more information, please see this help article on \href{https://www.overleaf.com/learn/latex/tables}{tables}. 
+% Triple display of tuning values
+\begin{figure}[!htb]
+\minipage{0.32\textwidth}
+    \includegraphics[width=\linewidth]{TuningFull.png}
+    \caption{1.0}
+    \label{fig:tuningfull}
+\endminipage\hfill
+\minipage{0.32\textwidth}
+    \includegraphics[width=\linewidth]{TuningHalf.png}
+    \caption{0.5}
+    \label{fig:tuninghalf}
+\endminipage\hfill
+\minipage{0.32\textwidth}%
+    \includegraphics[width=\linewidth]{TuningQuarter.png}
+    \caption{0.25}
+    \label{fig:tuningquarter}
+\endminipage
+\caption{Original image with different tuning parameter values.}
+\end{figure}
 
-% \begin{table}
-% \centering
-% \begin{tabular}{l|r}
-% Item & Quantity \\\hline
-% Widgets & 42 \\
-% Gadgets & 13
-% \end{tabular}
-% \caption{\label{tab:widgets}An example table.}
-% \end{table}
+\section{Further Continuation}
+Further continuation of this software research project would consist of connecting the Unity shaders to a head-mounted display.
 
-\subsection{How to add Comments and Track Changes}
-
-Comments can be added to your project by highlighting some text and clicking ``Add comment'' in the top right of the editor pane. To view existing comments, click on the Review menu in the toolbar above. To reply to a comment, click on the Reply button in the lower right corner of the comment. You can close the Review pane by clicking its name on the toolbar when you're done reviewing for the time being.
-
-Track changes are available on all our \href{https://www.overleaf.com/user/subscription/plans}{premium plans}, and can be toggled on or off using the option at the top of the Review pane. Track changes allow you to keep track of every change made to the document, along with the person making the change. 
-
-\subsection{How to add Lists}
-
-You can make lists with automatic numbering \dots
-
-\begin{enumerate}
-\item Like this,
-\item and like this.
-\end{enumerate}
-\dots or bullet points \dots
-\begin{itemize}
-\item Like this,
-\item and like this.
-\end{itemize}
-
-\subsection{How to write Mathematics}
-
-\LaTeX{} is great at typesetting mathematics. Let $X_1, X_2, \ldots, X_n$ be a sequence of independent and identically distributed random variables with $\text{E}[X_i] = \mu$ and $\text{Var}[X_i] = \sigma^2 < \infty$, and let
-\[S_n = \frac{X_1 + X_2 + \cdots + X_n}{n}
-      = \frac{1}{n}\sum_{i}^{n} X_i\]
-denote their mean. Then as $n$ approaches infinity, the random variables $\sqrt{n}(S_n - \mu)$ converge in distribution to a normal $\mathcal{N}(0, \sigma^2)$.
-
-
-\subsection{How to change the margins and paper size}
-
-Usually the template you're using will have the page margins and paper size set correctly for that use-case. For example, if you're using a journal article template provided by the journal publisher, that template will be formatted according to their requirements. In these cases, it's best not to alter the margins directly.
-
-If however you're using a more general template, such as this one, and would like to alter the margins, a common way to do so is via the geometry package. You can find the geometry package loaded in the preamble at the top of this example file, and if you'd like to learn more about how to adjust the settings, please visit this help article on \href{https://www.overleaf.com/learn/latex/page_size_and_margins}{page size and margins}.
-
-\subsection{How to change the document language and spell check settings}
-
-Overleaf supports many different languages, including multiple different languages within one document. 
-
-To configure the document language, simply edit the option provided to the babel package in the preamble at the top of this example project. To learn more about the different options, please visit this help article on \href{https://www.overleaf.com/learn/latex/International_language_support}{international language support}.
-
-To change the spell check language, simply open the Overleaf menu at the top left of the editor window, scroll down to the spell check setting, and adjust accordingly.
-
-\subsection{How to add Citations and a References List}
-
-You can simply upload a \verb|.bib| file containing your BibTeX entries, created with a tool such as JabRef. You can then cite entries from it, like this: \cite{greenwade93}. Just remember to specify a bibliography style, as well as the filename of the \verb|.bib|. You can find a \href{https://www.overleaf.com/help/97-how-to-include-a-bibliography-using-bibtex}{video tutorial here} to learn more about BibTeX.
-
-If you have an \href{https://www.overleaf.com/user/subscription/plans}{upgraded account}, you can also import your Mendeley or Zotero library directly as a \verb|.bib| file, via the upload menu in the file-tree.
-
-\subsection{Good luck!}
-
-We hope you find Overleaf useful, and do take a look at our \href{https://www.overleaf.com/learn}{help library} for more tutorials and user guides! Please also let us know if you have any feedback using the Contact Us link at the bottom of the Overleaf menu --- or use the contact form at \url{https://www.overleaf.com/contact}.
-
-\bibliographystyle{alpha}
-\bibliography{sample}
+\begin{thebibliography}{9}
+\bibitem{thebookofshaders}
+    The Book of Shaders: https://thebookofshaders.com
+\end{thebibliography}
 
 \end{document}
