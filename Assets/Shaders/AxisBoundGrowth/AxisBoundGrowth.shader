@@ -1,4 +1,4 @@
-Shader "Custom/BunnyEarsShader"
+Shader "Custom/AxisBoundGrowth"
 {
     Properties 
     {

@@ -91,6 +91,7 @@ Shader "Custom/Martin"
             sampler2D _MainTex;
             float _Scale;
             float _TexBlend;
+            float _TuningParameter;
 
             v2f vert (appdata v)
             {
@@ -139,12 +140,12 @@ Shader "Custom/Martin"
                 //float4 col = i.color;
                 float t;
                 Unity_SimpleNoise_float(i.uv + _Time[0], 100, t);
-                return t * skinMask;
+                /* return t * skinMask; */
                 //tex.rgb = (tex.r + tex.g + tex.b) / 3.0;
                 float3 _Vals = 2 + floor(14 * _ColorScale);
                 float4 reduced = float4(floor((_Vals - 1.0f) * tex + 0.5) / (_Vals - 1.0f), 1);
                 float4 orig = tex2D(_MainTex, i.uv);
-                return lerp(orig, reduced, _TexBlend);
+                return lerp(orig, reduced, _TuningParameter);
             }
             ENDCG
         }

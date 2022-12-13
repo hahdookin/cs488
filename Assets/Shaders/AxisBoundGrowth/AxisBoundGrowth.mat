@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: BunnyEars
+  m_Name: AxisBoundGrowth
   m_Shader: {fileID: 4800000, guid: 6270a7b1b124ede4eb7d93b29a4f31d4, type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 4

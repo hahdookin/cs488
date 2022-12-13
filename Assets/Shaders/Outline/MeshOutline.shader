@@ -31,11 +31,12 @@ Shader "Custom/MeshOutline"
             // Properties
             float _MaxScale;
             float4 _BorderColor;
+            float _TuningParameter;
 
             v2f vert (appdata v)
             {
                 v2f o;
-                o.vertex = UnityObjectToClipPos(v.vertex * _MaxScale);
+                o.vertex = UnityObjectToClipPos(v.vertex * _MaxScale * _TuningParameter);
                 o.normal = v.normal * -1;
                 return o;
             }
