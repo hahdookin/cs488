@@ -30,20 +30,20 @@
 \maketitle
 
 \begin{abstract}
-Computer graphics shaders were developed in order to test the ability to scale photorealism. Graphics shaders were developed in Unity using screen-space edge detection and color palette reduction. Vertex shaders were developed for 3D models used in tracking software. Shaders were designed to be scaled from non-photo realistic to photo realistic through a tuning parameter. The tuning parameter was controlled through the use of easing functions. Continuation of the project will include setting up face tracking and using a depth camera.
+Computer graphics shaders were developed in order to test the ability to scale photorealism. Graphics shaders were developed in Unity using screen-space edge detection and color palette reduction. Vertex shaders were developed for 3D models used in tracking software. Shaders were designed to be scaled from non-photorealistic to photorealistic through a tuning parameter. The tuning parameter was controlled through the use of easing functions. Continuation of the project will include setting up face tracking and using a depth camera.
 \end{abstract}
 
 \section{Introduction}
 
-The research done is focused on creating Unity shaders to change the style of 3D content in real time to render virtual humans in different styles ranging from realistic to non-photorealistic.
+The research done is focused on creating Unity shaders to change the style of 3D content in real-time to render virtual humans in different styles ranging from realistic to non-photorealistic.
 
-In order to emulate a non-photorealistic appearance, the following distinct qualities of non-photo realistic renderings were deduced:
+In order to emulate a non-photorealistic appearance, the following distinct qualities of non-photorealistic renderings were deduced:
 \begin{enumerate}
 \item Reduced color palette 
 \item Thick outlines
 \item Non-human features
 \end{enumerate}
-After examining these key qualities of non-photorealistic renderings, fragment and vertex shaders were developed to utilize screen-space textures and 3D models to scale photo-realism. Fragment shaders were used to apply post-processing effects to a screen-space texture. Vertex shaders were used to modify a mesh. Both shader implementations were combined to increase the effectiveness of the non-photo realistic illusion. Finally, the composited effects will be scaled based on a tuning parameter that ranges from 0 to 1.
+After examining these key qualities of non-photorealistic renderings, fragment and vertex shaders were developed to utilize screen-space textures and 3D models to scale photorealism. Fragment shaders were used to apply post-processing effects to a screen-space texture. Vertex shaders were used to modify a mesh. Both shader implementations were combined to increase the effectiveness of the non-photorealistic illusion. Finally, the composited effects will be scaled based on a tuning parameter that ranges from 0 to 1.
 
 
 \section{Fragment Shader}
@@ -182,6 +182,9 @@ In figure \ref{fig:BunnyEarsScaled65}, it can be seen that parts of the mesh col
 \subsection{Mesh outline}
 
 To apply an outline to a 3D model in world-space, a copy of the mesh with its normals flipped was created, scaled up slightly, and removed from the lighting pipeline.
+
+% Although this technique results in consistent and reliable outlines, there are some downsides to using this technique. This technique for achieving outlines requires the 3D model to be free of concave surfaces, which causes the outline mesh to bleed through the model. 
+Although this technique results in consistent and reliable outlines, this technique requires the 3D model to be free of concave surfaces, which causes the outline mesh to bleed through the model. Additionally, this technique cannot be used if only post-processing effects are available.
 
 \section{Tuning Parameter}
 \subsection{Connecting the Tuning Parameter}
